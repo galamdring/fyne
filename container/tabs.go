@@ -730,3 +730,7 @@ func moreIcon(t baseTabs) fyne.Resource {
 	}
 	return theme.MoreHorizontalIcon()
 }
+
+func addIcon(t baseTabs) fyne.Resource {
+	return theme.ContentAddIcon()
+}
