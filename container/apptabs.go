@@ -360,7 +360,11 @@ func (r *appTabsRenderer) buildTabButtons(count int) *fyne.Container {
 			if item.OnClose != nil {
 				button = &tabButton{
 					onTapped: func() { r.appTabs.Select(item) },
-					onClosed: func() { item.OnClose() },
+					onClosed: func() {
+						item.OnClose()
+						r.appTabs.Remove(item)
+						r.Refresh()
+					},
 				}
 			} else {
 				button = &tabButton{
