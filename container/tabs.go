@@ -19,6 +19,7 @@ type TabItem struct {
 	Text    string
 	Icon    fyne.Resource
 	Content fyne.CanvasObject
+	OnClose func()
 }
 
 // TabLocation is the location where the tabs of a tab container should be rendered

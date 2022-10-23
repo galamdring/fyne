@@ -27,7 +27,7 @@ type DuplicateTabs struct {
 	popupMenu *widget.PopUpMenu
 }
 
-func NewDuplicatableTabs(items ...*TabItem) *DuplicateTabs {
+func NewDuplicateTabs(items ...*TabItem) *DuplicateTabs {
 	tabs := &DuplicateTabs{}
 	tabs.BaseWidget.ExtendBaseWidget(tabs)
 	tabs.setItems(items)

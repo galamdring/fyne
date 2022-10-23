@@ -25,6 +25,7 @@ type AppTabs struct {
 	OnChanged    func(*TabItem)
 	OnSelected   func(*TabItem)
 	OnUnselected func(*TabItem)
+	OnAdded      func() *TabItem
 
 	current         int
 	location        TabLocation
@@ -289,27 +290,42 @@ func (r *appTabsRenderer) Refresh() {
 	canvas.Refresh(r.appTabs)
 }
 
+func (r *appTabsRenderer) buildAddTabButton() *widget.Button {
+	addButton := &widget.Button{
+		Icon:       addIcon(r.appTabs),
+		Importance: widget.LowImportance,
+		OnTapped: func() {
+			newTab := r.appTabs.OnAdded()
+			r.appTabs.Items = append(r.appTabs.Items, newTab)
+			r.Refresh()
+			r.appTabs.Select(newTab)
+		},
+	}
+	return addButton
+}
+
 func (r *appTabsRenderer) buildOverflowTabsButton() (overflow *widget.Button) {
-	overflow = &widget.Button{Icon: moreIcon(r.appTabs), Importance: widget.LowImportance, OnTapped: func() {
-		// Show pop up containing all tabs which did not fit in the tab bar
+	overflow = &widget.Button{Icon: moreIcon(r.appTabs),
+		Importance: widget.LowImportance, OnTapped: func() {
+			// Show pop up containing all tabs which did not fit in the tab bar
 
-		itemLen, objLen := len(r.appTabs.Items), len(r.bar.Objects[0].(*fyne.Container).Objects)
-		items := make([]*fyne.MenuItem, 0, itemLen-objLen)
-		for i := objLen; i < itemLen; i++ {
-			index := i // capture
-			// FIXME MenuItem doesn't support icons (#1752)
-			// FIXME MenuItem can't show if it is the currently selected tab (#1753)
-			items = append(items, fyne.NewMenuItem(r.appTabs.Items[i].Text, func() {
-				r.appTabs.SelectIndex(index)
-				if r.appTabs.popUpMenu != nil {
-					r.appTabs.popUpMenu.Hide()
-					r.appTabs.popUpMenu = nil
-				}
-			}))
-		}
+			itemLen, objLen := len(r.appTabs.Items), len(r.bar.Objects[0].(*fyne.Container).Objects)
+			items := make([]*fyne.MenuItem, 0, itemLen-objLen)
+			for i := objLen; i < itemLen; i++ {
+				index := i // capture
+				// FIXME MenuItem doesn't support icons (#1752)
+				// FIXME MenuItem can't show if it is the currently selected tab (#1753)
+				items = append(items, fyne.NewMenuItem(r.appTabs.Items[i].Text, func() {
+					r.appTabs.SelectIndex(index)
+					if r.appTabs.popUpMenu != nil {
+						r.appTabs.popUpMenu.Hide()
+						r.appTabs.popUpMenu = nil
+					}
+				}))
+			}
 
-		r.appTabs.popUpMenu = buildPopUpMenu(r.appTabs, overflow, items)
-	}}
+			r.appTabs.popUpMenu = buildPopUpMenu(r.appTabs, overflow, items)
+		}}
 
 	return overflow
 }
@@ -341,8 +357,15 @@ func (r *appTabsRenderer) buildTabButtons(count int) *fyne.Container {
 		item := r.appTabs.Items[i]
 		button, ok := r.buttonCache[item]
 		if !ok {
-			button = &tabButton{
-				onTapped: func() { r.appTabs.Select(item) },
+			if item.OnClose != nil {
+				button = &tabButton{
+					onTapped: func() { r.appTabs.Select(item) },
+					onClosed: func() { item.OnClose() },
+				}
+			} else {
+				button = &tabButton{
+					onTapped: func() { r.appTabs.Select(item) },
+				}
 			}
 			r.buttonCache[item] = button
 		}
@@ -358,6 +381,8 @@ func (r *appTabsRenderer) buildTabButtons(count int) *fyne.Container {
 		button.Refresh()
 		buttons.Objects = append(buttons.Objects, button)
 	}
+	addButton := r.buildAddTabButton()
+	buttons.Objects = append(buttons.Objects, addButton)
 	return buttons
 }
 
